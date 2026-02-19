@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Inter, -apple-system, sans-serif;
+      font-size: 12px;
+      color: #333;
+      background: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid #e5e5e5;
+      background: linear-gradient(135deg, #f0fffe 0%, #fff 100%);
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .header h1 .logo-mark {
+      width: 18px;
+      height: 34px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .header h1 span {
+      font-weight: 400;
+      color: #00B5AD;
+    }
+    .header p {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.4;
+    }
+    .header .steps {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .header .step {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: #666;
+    }
+    .header .step-num {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #00B5AD;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Input area */
+    .input-section label {
+      display: block;
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus {
+      border-color: #00B5AD;
+    }
+    textarea::placeholder {
+      color: #bbb;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .file-btn {
+      font-size: 11px;
+      color: #00B5AD;
+      background: none;
+      border: 1px solid #00B5AD;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .file-btn:hover { background: #f0fffe; }
+
+    .template-link {
+      font-size: 11px;
+      color: #888;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .template-link:hover { color: #555; }
+
+    .format-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      display: none;
+    }
+    .format-badge.markdown { background: #E8F5E9; color: #2E7D32; display: inline; }
+    .format-badge.json { background: #E3F2FD; color: #1565C0; display: inline; }
+
+    /* Sections */
+    .sections-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .sections-header label {
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .toggle-all {
+      font-size: 11px;
+      color: #00B5AD;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-weight: 500;
+    }
+
+    .checkboxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .checkbox-item input { accent-color: #00B5AD; }
+    .checkbox-item.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Generate button */
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: #00B5AD;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 8px rgba(0, 181, 173, 0.3);
+      margin-top: 4px;
+    }
+    .generate-btn:hover {
+      background: #009E97;
+      box-shadow: 0 4px 12px rgba(0, 181, 173, 0.4);
+      transform: translateY(-1px);
+    }
+    .generate-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(0, 181, 173, 0.3);
+    }
+    .generate-btn:disabled {
+      background: #ddd;
+      color: #999;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Status */
+    .status-bar {
+      padding: 12px 16px;
+      border-top: 1px solid #e5e5e5;
+      font-size: 11px;
+      color: #888;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-bar.error { color: #D32F2F; }
+    .status-bar.success { color: #2E7D32; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #ddd;
+      border-top-color: #00B5AD;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+    .spinner.active { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: #eee;
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar.active { display: block; }
+    .progress-fill {
+      height: 100%;
+      background: #00B5AD;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    input[type="file"] { display: none; }
+
+    /* Variable mode */
+    .var-section { margin-top: -4px; }
+    .var-section .section-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .var-options {
+      display: flex;
+      gap: 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .var-option {
+      flex: 1;
+      text-align: center;
+      padding: 7px 4px;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      border-right: 1px solid #ddd;
+      color: #666;
+      background: #fafafa;
+      transition: all 0.15s;
+      line-height: 1.3;
+    }
+    .var-option:last-child { border-right: none; }
+    .var-option:hover { background: #f0fffe; }
+    .var-option.active {
+      background: #00B5AD;
+      color: #fff;
+      font-weight: 600;
+    }
+    .var-option input { display: none; }
+    .var-hint {
+      font-size: 10px;
+      color: #999;
+      margin-top: 5px;
+      line-height: 1.3;
+    }
+
+    /* Help button */
+    .help-btn {
+      width: 100%;
+      padding: 14px;
+      background: none;
+      color: #00B5AD;
+      border: 1px solid #00B5AD;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: -4px;
+    }
+    .help-btn:hover {
+      background: #f0fffe;
+    }
+
+    /* Help overlay */
+    .help-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+    .help-overlay.active { display: flex; }
+    .help-panel {
+      position: absolute;
+      inset: 12px;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .help-header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .help-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .help-close {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .help-close:hover { background: #e0e0e0; }
+    .help-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #444;
+    }
+    .help-body h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 16px 0 6px;
+    }
+    .help-body h3:first-child { margin-top: 0; }
+    .help-body code {
+      background: #f5f5f5;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .help-body pre {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 10px;
+      line-height: 1.5;
+      margin: 8px 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .help-body .prompt-example {
+      background: #f0fffe;
+      border-left: 3px solid #00B5AD;
+      padding: 8px 12px;
+      margin: 8px 0;
+      border-radius: 0 6px 6px 0;
+      font-style: italic;
+      color: #555;
+    }
+    .help-actions {
+      padding: 12px 16px;
+      border-top: 1px solid #e5e5e5;
+      display: flex;
+      gap: 8px;
+    }
+    .help-actions button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .help-actions .use-template-btn {
+      background: #00B5AD;
+      color: #fff;
+    }
+    .help-actions .use-template-btn:hover { background: #009E97; }
+
+    /* Platform & device selector */
+    .platform-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .platform-section .section-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+    .platform-options {
+      display: flex;
+      gap: 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .platform-option {
+      flex: 1;
+      text-align: center;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-right: 1px solid #ddd;
+      color: #666;
+      background: #fafafa;
+      transition: all 0.15s;
+      line-height: 1.3;
+    }
+    .platform-option:last-child { border-right: none; }
+    .platform-option:hover { background: #f0fffe; }
+    .platform-option.active {
+      background: #00B5AD;
+      color: #fff;
+      font-weight: 600;
+    }
+    .platform-option input { display: none; }
+    .device-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      display: block;
+    }
+    .device-checkboxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .style-hint {
+      font-size: 10px;
+      color: #00B5AD;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><svg class="logo-mark" viewBox="210 79.5 180 344" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M354.084 209.51C361.429 209.042 369.198 209.518 376.584 209.344C378.834 209.29 387.022 208.954 388.437 210.436C389.404 213.73 389.026 227.982 389.026 232.375L389.023 267.893L389.029 326.312C389.029 338.068 389.343 351.277 388.572 362.816C388.118 369.372 386.791 375.838 384.629 382.045C379.722 395.776 368.829 406.304 355.827 412.497C348.488 415.963 340.76 418.538 332.808 420.167C310.168 424.854 275.011 424.294 253.01 416.54C236.311 410.655 223.323 401.562 215.589 385.218C208.284 367.884 210.533 349.314 210.164 330.952C210.116 328.577 209.7 322.709 211.116 320.989C214.046 319.776 238.544 319.873 242.692 320.371C243.427 320.459 245.44 320.682 245.935 321.221C248.754 324.285 242.535 363.868 251.175 374.566C258.415 383.531 274.499 386.009 285.339 387.128C301.733 388.821 332.064 388.054 345.309 377.118C349.106 373.986 350.621 370.225 351.535 365.467C353.492 355.288 352.622 338.519 352.622 327.689L352.61 249.168L352.596 224.782C352.593 220.582 352.496 216.154 352.716 211.963C352.789 210.506 353.164 210.262 354.084 209.51Z" fill="#1BAA98"/><path d="M294.099 80.3187C333.922 79.1229 384.781 89.1558 388.476 138.094C388.898 143.697 389.844 178.886 388.303 182.08C386.234 183.714 381.79 183.237 379.18 183.189C372.119 183.058 365.103 183.256 358.042 183.264C356.952 183.266 354.359 183.101 353.498 182.191C352.332 180.306 352.578 175.749 352.581 173.735L352.619 157.357C352.64 148.703 353.472 133.956 346.956 127.667C336.822 117.89 315.896 115.921 302.413 115.685C287.542 115.424 263.953 116.996 252.561 127.458C244.961 134.438 246.52 156.701 246.54 167.338L246.538 249.001C246.538 262.535 246.589 276.072 246.521 289.605C246.408 290.542 246.54 293.542 245.213 293.596C239.249 293.84 214.777 295.208 210.629 293.018C209.672 290.377 210.173 265.632 210.173 260.742L210.178 203.621L210.171 164.609C210.172 153.519 209.827 142.906 211.743 131.91C218.772 91.5533 258.587 81.5137 294.099 80.3187Z" fill="#1A1A12"/></svg>MARC <span>JSONS</span></h1>
+    <p>Turn design tokens into a visual style guide on your Figma canvas.</p>
+    <div class="steps">
+      <div class="step"><span class="step-num">1</span> Paste or upload tokens</div>
+      <div class="step"><span class="step-num">2</span> Pick sections</div>
+      <div class="step"><span class="step-num">3</span> Generate</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="input-section">
+      <label>Design Tokens <span id="formatBadge" class="format-badge"></span></label>
+      <textarea id="input" placeholder="Paste your design system markdown or JSON here..."></textarea>
+      <div class="input-actions">
+        <button class="file-btn" id="uploadBtn">Upload File</button>
+        <input type="file" id="fileInput" accept=".md,.json,.txt">
+        <span class="template-link" id="templateLink">Download template</span>
+      </div>
+    </div>
+
+    <div class="platform-section">
+      <span class="section-label">Platform & Devices</span>
+      <div class="platform-options" id="platformOptions">
+        <label class="platform-option active" data-platform="apple">
+          <input type="radio" name="platform" value="apple" checked>
+          Apple
+        </label>
+        <label class="platform-option" data-platform="android">
+          <input type="radio" name="platform" value="android">
+          Android
+        </label>
+        <label class="platform-option" data-platform="both">
+          <input type="radio" name="platform" value="both">
+          Both
+        </label>
+      </div>
+      <span class="device-label">Devices</span>
+      <div class="device-checkboxes" id="deviceCheckboxes">
+        <label class="checkbox-item" data-device="iphone">
+          <input type="checkbox" value="iphone" checked> iPhone
+        </label>
+        <label class="checkbox-item" data-device="ipad">
+          <input type="checkbox" value="ipad"> iPad
+        </label>
+        <label class="checkbox-item" data-device="watch">
+          <input type="checkbox" value="watch"> Apple Watch
+        </label>
+        <label class="checkbox-item" data-device="mac">
+          <input type="checkbox" value="mac"> Mac
+        </label>
+      </div>
+      <div class="style-hint" id="styleHint">Component Style: iOS 26</div>
+    </div>
+
+    <div class="sections-section">
+      <div class="sections-header">
+        <label>Sections to Generate</label>
+        <button class="toggle-all" id="toggleAll">Select All</button>
+      </div>
+      <div class="checkboxes" id="checkboxes">
+        <label class="checkbox-item" data-section="header">
+          <input type="checkbox" value="header" checked> Header
+        </label>
+        <label class="checkbox-item" data-section="colors">
+          <input type="checkbox" value="colors" checked> Colors
+        </label>
+        <label class="checkbox-item" data-section="darkColors">
+          <input type="checkbox" value="darkColors" checked> Dark Colors
+        </label>
+        <label class="checkbox-item" data-section="typography">
+          <input type="checkbox" value="typography" checked> Typography
+        </label>
+        <label class="checkbox-item" data-section="spacing">
+          <input type="checkbox" value="spacing" checked> Spacing
+        </label>
+        <label class="checkbox-item" data-section="radius">
+          <input type="checkbox" value="radius" checked> Border Radius
+        </label>
+        <label class="checkbox-item" data-section="shadows">
+          <input type="checkbox" value="shadows" checked> Shadows
+        </label>
+        <label class="checkbox-item" data-section="components">
+          <input type="checkbox" value="components" checked> Component Library
+        </label>
+      </div>
+    </div>
+
+    <div class="var-section">
+      <span class="section-label">Figma Variables</span>
+      <div class="var-options" id="varOptions">
+        <label class="var-option active" data-mode="none">
+          <input type="radio" name="varMode" value="none" checked>
+          Don't Sync
+        </label>
+        <label class="var-option" data-mode="add">
+          <input type="radio" name="varMode" value="add">
+          Add New
+        </label>
+        <label class="var-option" data-mode="smart">
+          <input type="radio" name="varMode" value="smart">
+          Smart Update
+        </label>
+        <label class="var-option" data-mode="replace">
+          <input type="radio" name="varMode" value="replace">
+          Replace All
+        </label>
+      </div>
+      <div class="var-hint" id="varHint">Variables won't be created or modified.</div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" disabled>Generate Style Guide</button>
+    <button class="help-btn" id="helpBtn">Confused? Start Here</button>
+  </div>
+
+  <!-- Help overlay -->
+  <div class="help-overlay" id="helpOverlay">
+    <div class="help-panel">
+      <div class="help-header">
+        <h2>Getting Started</h2>
+        <button class="help-close" id="helpClose">&times;</button>
+      </div>
+      <div class="help-body" id="helpBody"></div>
+      <div class="help-actions">
+        <button class="use-template-btn" id="helpUseTemplate">Download Template</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <div class="spinner" id="spinner"></div>
+    <span id="statusText">Paste or upload a design system to get started</span>
+  </div>
+
+  <!-- SCRIPT_INJECT -->
+</body>
+</html>
