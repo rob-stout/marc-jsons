@@ -30,6 +30,14 @@ export async function generateShadows(
   return section;
 }
 
+function hexToAlpha(hex: string): number {
+  const h = hex.replace("#", "");
+  if (h.length === 8) {
+    return parseInt(h.slice(6, 8), 16) / 255;
+  }
+  return 0.15;
+}
+
 async function createShadowItem(token: ShadowToken): Promise<FrameNode> {
   const col = createAutoLayoutFrame(token.name, "VERTICAL", 12);
   col.counterAxisAlignItems = "CENTER";
@@ -42,10 +50,11 @@ async function createShadowItem(token: ShadowToken): Promise<FrameNode> {
   rect.fills = [{ type: "SOLID", color: COLORS.background }];
 
   const shadowColor = hexToRgb(token.color);
+  const shadowAlpha = hexToAlpha(token.color);
   rect.effects = [
     {
       type: "DROP_SHADOW",
-      color: { ...shadowColor, a: 0.15 },
+      color: { ...shadowColor, a: shadowAlpha },
       offset: { x: token.x, y: token.y },
       radius: token.blur,
       spread: token.spread,
