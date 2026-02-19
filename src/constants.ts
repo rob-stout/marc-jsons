@@ -1,3 +1,5 @@
+export const PLUGIN_VERSION = "1.0.0";
+
 // Layout constants for style guide canvas output
 export const PAGE_WIDTH = 1200;
 export const PAGE_PADDING = 64;

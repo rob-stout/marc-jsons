@@ -10,13 +10,14 @@ import { generateRadius } from "./generators/radiusGenerator";
 import { generateShadows } from "./generators/shadowGenerator";
 import { generateComponents } from "./generators/componentGenerator";
 import { syncVariables, VariableMode } from "./generators/variableGenerator";
-import { createAutoLayoutFrame, createDivider, appendFill } from "./generators/shared";
+import { createAutoLayoutFrame, createDivider, appendFill, createLabel } from "./generators/shared";
 import {
   PAGE_WIDTH,
   PAGE_PADDING,
   SECTION_SPACING,
   CONTENT_WIDTH,
   COLORS,
+  PLUGIN_VERSION,
 } from "./constants";
 
 type SectionKey =
@@ -109,7 +110,7 @@ figma.ui.onmessage = async (msg: {
       }
     }
 
-    const root = createRootFrame(ds.meta.name, platform);
+    const root = await createRootFrame(ds.meta.name, platform);
 
     const sections = msg.sections;
     const totalSections = sections.length;
@@ -245,7 +246,7 @@ function parseContent(content: string): DesignSystem {
   return parseMarkdown(trimmed);
 }
 
-function createRootFrame(systemName: string, platform?: string): FrameNode {
+async function createRootFrame(systemName: string, platform?: string): Promise<FrameNode> {
   const width = platform === "both" ? PAGE_WIDTH * 2 : PAGE_WIDTH;
   const root = createAutoLayoutFrame(
     `${systemName} — Style Guide`,
@@ -261,6 +262,16 @@ function createRootFrame(systemName: string, platform?: string): FrameNode {
   root.paddingLeft = PAGE_PADDING;
   root.fills = [{ type: "SOLID", color: COLORS.background }];
   root.cornerRadius = 0;
+
+  // Version label top-right
+  const versionRow = createAutoLayoutFrame("Version", "HORIZONTAL", 0);
+  versionRow.fills = [];
+  versionRow.primaryAxisAlignItems = "MAX";
+  const versionLabel = await createLabel(`MARC JSONS v${PLUGIN_VERSION}`, 10, COLORS.textSecondary);
+  versionRow.appendChild(versionLabel);
+  root.appendChild(versionRow);
+  versionRow.layoutSizingHorizontal = "FILL";
+
   return root;
 }
 
