@@ -2,7 +2,7 @@
 
 **Role:** Solo designer and developer
 **Type:** Figma plugin (TypeScript)
-**Status:** V1 complete, entering bug-fix phase
+**Status:** V1 complete — iOS and Android (Material Design 3) generation shipping
 **Stack:** TypeScript, esbuild, Figma Plugin API
 
 ---
@@ -22,10 +22,12 @@ MARC JSONS is a Figma plugin that closes that gap: paste or upload your tokens, 
 From a single paste or file upload, the plugin produces:
 
 - A style guide covering colors (light and dark), typography, spacing, border radius, and shadows — each rendered as a proper visual reference, not a table
-- A 15-component UI library with variants: Button (8 variants), TextField, SearchBar, SegmentedControl, NavBar, SectionHeader, ListCell (3 accessories), Card, Toggle, Badge, TabBarItem, Toolbar, ContextMenu, ActionSheet, and Alert
+- A 30-component UI library: 15 iOS (HIG) components and 15 Material Design 3 (Android) components, generated from the same token input
+  - iOS: Button (8 variants), TextField, SearchBar, SegmentedControl, NavBar, SectionHeader, ListCell (3 accessories), Card, Toggle, Badge, TabBarItem, Toolbar, ContextMenu, ActionSheet, Alert
+  - Android MD3: Button (5 variants including FAB), TextField (outlined + filled), SearchBar, NavigationBar, TopAppBar, ListItem, Card (3 elevations), Switch, Chip, BottomNavigation, BottomSheet, Snackbar, Dialog, NavigationDrawer
 - Figma Variables synced from your tokens, with a 4-mode sync system
 
-All components are built as Figma ComponentSets with named variants, ready for use in prototypes and specs.
+All components are built as Figma ComponentSets with named variants, ready for use in prototypes and specs. When both platforms are selected, the canvas layout splits into a two-column view — Apple left, Android right — from the same single generation run.
 
 ---
 
@@ -152,6 +154,33 @@ This means the component output is always legible at the scale the user is worki
 
 ---
 
+### 6. Cross-Platform Component Generation — The Decision to Build Rather Than Defer
+
+**The easy path:** Disable Android component generation for V1. The platform routing infrastructure (device lists, two-column layout, `generateDeviceColumn`) was already in place. Shipping "iOS only" with a grayed-out Android option would have been a defensible scope decision.
+
+**Why I didn't take it:** A design system tool that understands tokens semantically but only generates one platform's components makes an implicit claim that the other platform is an afterthought. That is not how serious design systems work. If the token resolver already knows what "primary" and "surface" mean, it should be able to express those intents in Material Design 3 idioms just as well as iOS idioms.
+
+**The decision:** Build 15 MD3-authentic Android components to match the 15 iOS components, all consuming the same semantic token output from `tokenResolver.ts`.
+
+The key insight is that the resolver is genuinely platform-agnostic. It returns a hex value for `primary`, a pixel value for `medium` spacing, a weight for `label` typography. Whether that maps to an iOS Button with rounded corners and a SwiftUI feel, or an MD3 FilledButton with its specific shape and state-layer behavior, is a rendering decision — not a token decision. The architecture already separated those concerns. The MD3 generator just had to honor them.
+
+```typescript
+// The same resolver call works for both platforms.
+// What changes is how each platform generator interprets the result.
+var fill = getColorToken(ds, "primary");    // "#5C6BC0"
+var radius = getRadiusToken(ds, "medium");  // 12
+var labelFont = getTypographyToken(ds, "label");
+
+// iOS Button → rounded rect, system font weight
+// MD3 Button → 20px corner radius per spec, state layer overlay, M3 type scale
+```
+
+**The trade-off considered:** MD3 components have their own specifications that don't map cleanly to iOS conventions — state layers, tonal variants, shape tokens with different corner radius semantics. Matching these properly required studying the MD3 spec rather than just mirroring the iOS component shapes. The risk was shallow Android components that look like iOS components wearing a different stylesheet. The standard I held myself to: each Android component should be visually recognizable to an Android designer, not just technically distinct from iOS.
+
+**What this validates architecturally:** Adding 15 new components required no changes to `tokenResolver.ts`, no changes to the parser, no changes to the variable generator. The data pipeline held. The only new code was the MD3 component rendering functions themselves, slotted into the existing `generateAndroidColumn` handler that the routing layer was already calling. This is the payoff for the earlier architectural discipline.
+
+---
+
 ## The Build: How the Code Is Organized
 
 ```
@@ -171,8 +200,9 @@ src/
     radiusGenerator.ts
     shadowGenerator.ts
     headerGenerator.ts
-    componentGenerator.ts — all 15 components
-    variableGenerator.ts  — 4-mode Figma Variables sync
+    componentGenerator.ts    — 15 iOS (HIG) components + platform routing
+    md3ComponentGenerator.ts — 15 Material Design 3 Android components
+    variableGenerator.ts     — 4-mode Figma Variables sync
     shared.ts          — layout primitives, font loading, text nodes
     diffGenerator.ts
     icons.ts           — vector path icons (chevrons, search, close, etc.)
@@ -182,7 +212,7 @@ src/
 
 The architecture reflects a strict boundary between the sandbox (code.ts and generators) and the plugin UI (ui.html and ui.ts). Data flows one direction: the UI collects user intent and posts a message; the sandbox parses, generates, and posts back progress and results.
 
-The `DesignSystem` type is the central data structure — everything the parser produces and everything the generators consume is typed against it. This made adding the JSON parser straightforward: as long as it produced a valid `DesignSystem`, the generators did not need to change.
+The `DesignSystem` type is the central data structure — everything the parser produces and everything the generators consume is typed against it. This made adding the JSON parser straightforward: as long as it produced a valid `DesignSystem`, the generators did not need to change. The same held true when adding the MD3 Android generator — `md3ComponentGenerator.ts` consumes the same `DesignSystem` type through the same `tokenResolver.ts` calls. Two platforms, one data contract.
 
 ---
 
@@ -194,7 +224,11 @@ The `DesignSystem` type is the central data structure — everything the parser 
 
 **On TypeScript in a sandboxed environment:** The plugin runs TypeScript compiled to ES2017 via esbuild. This is a meaningful constraint — not all modern syntax is safe, and the Figma typings are detailed but occasionally surprising. Keeping the code deliberately readable rather than clever made debugging inside Figma's console much faster.
 
-**On scope:** The 15 components were a deliberate decision about what a "minimum credible component library" looks like for an iOS-first design system. Everything above that number adds diminishing returns for a V1. Everything below it feels incomplete. Getting that number right is a product decision, not a technical one.
+**On scope:** The 15 iOS components were a deliberate decision about what a "minimum credible component library" looks like. Everything above that number adds diminishing returns for a single-platform V1. Everything below it feels incomplete. Getting that number right is a product decision, not a technical one.
+
+**On the decision to build Android rather than defer it:** I had a defensible out — ship iOS only and call Android a V2 feature. I chose not to take it. A tool that claims to support design systems but only generates one platform's components is making a claim about what design systems are, and that claim is wrong. More practically: the token resolver architecture was already platform-agnostic. The cost to build MD3 properly was a few days of spec study and rendering work, not a rearchitecture. Deferring it would have been scope management as avoidance. Building it properly was the better argument for what the tool actually is.
+
+**On learning the MD3 spec from scratch:** Material Design 3 has its own shape system, state-layer model, and type scale that don't map directly onto iOS conventions. I had to actually read the spec rather than pattern-match from iOS. That process forced precision — every component has a clear "why does this look this way" answer grounded in the MD3 documentation, not just visual intuition.
 
 ---
 
@@ -202,9 +236,12 @@ The `DesignSystem` type is the central data structure — everything the parser 
 
 - Side-by-side screenshot: markdown token input → generated style guide output
 - Screenshot of the 4-mode variable sync control in the plugin UI
-- Generated component library showing all 15 components with variants
+- Generated iOS component library showing all 15 components with variants
+- Generated Android (MD3) component library — same token input, platform-authentic output
+- The two-column cross-platform canvas view: Apple left, Android right, from a single generation run
 - The `tokenResolver.ts` file — specifically the keyword-to-intent mapping structure
 - A before/after showing the same design system tokens generating the same output from both markdown and JSON formats
+- A side-by-side comparison of an iOS Button vs. MD3 Button generated from the same `primary` token — same color intent, different platform expression
 - The plugin panel UI at different states: empty, format detected (green "Markdown" badge), generating (progress bar), done
 
 ---
@@ -215,8 +252,10 @@ MARC JSONS sits at the intersection of the two things I have spent my career on:
 
 The semantic token resolver is the clearest expression of that. It treats naming inconsistency not as a problem to be corrected but as a constraint to be designed around. That is a systems-thinking move, not an engineering one.
 
-Building this also expanded what I can do technically. Implementing the JSON token parser from the W3C DTCG spec, working inside the Figma sandbox, and designing a component generator that renders pixel-accurate iOS components programmatically — these are capabilities I did not have a year ago. The design background made me better at knowing what "correct" looked like. The engineering work made me better at achieving it.
+Adding Material Design 3 generation sharpened that argument. The token resolver was always platform-agnostic by design — tokens express semantic intent, not platform idiom. iOS and Android are both downstream consumers of that intent. The fact that I could add 15 MD3 components without touching the resolver or the parser is not a coincidence; it is validation that the architecture was correct from the start. Cross-platform generation was always possible. The decision to ship it was a product stance, not a technical lift.
+
+Building this also expanded what I can do technically. Implementing the JSON token parser from the W3C DTCG spec, working inside the Figma sandbox, designing a component generator that renders pixel-accurate iOS components programmatically, and then learning the MD3 spec well enough to do the same for Android — these are capabilities I did not have a year ago. The design background made me better at knowing what "correct" looked like on both platforms. The engineering work made me better at achieving it.
 
 ---
 
-*Last updated: February 2026*
+*Last updated: February 18, 2026*
