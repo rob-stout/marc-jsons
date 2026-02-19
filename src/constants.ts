@@ -1,4 +1,7 @@
+declare const __BUILD_HASH__: string;
 export const PLUGIN_VERSION = "1.0.0";
+export const BUILD_HASH = typeof __BUILD_HASH__ !== "undefined" ? __BUILD_HASH__ : "dev";
+export const VERSION_STRING = `v${PLUGIN_VERSION} (${BUILD_HASH})`;
 
 // Layout constants for style guide canvas output
 export const PAGE_WIDTH = 1200;

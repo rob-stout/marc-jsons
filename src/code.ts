@@ -17,7 +17,7 @@ import {
   SECTION_SPACING,
   CONTENT_WIDTH,
   COLORS,
-  PLUGIN_VERSION,
+  VERSION_STRING,
 } from "./constants";
 
 type SectionKey =
@@ -267,7 +267,7 @@ async function createRootFrame(systemName: string, platform?: string): Promise<F
   const versionRow = createAutoLayoutFrame("Version", "HORIZONTAL", 0);
   versionRow.fills = [];
   versionRow.primaryAxisAlignItems = "MAX";
-  const versionLabel = await createLabel(`MARC JSONS v${PLUGIN_VERSION}`, 10, COLORS.textSecondary);
+  const versionLabel = await createLabel(`MARC JSONS ${VERSION_STRING}`, 10, COLORS.textSecondary);
   versionRow.appendChild(versionLabel);
   root.appendChild(versionRow);
   versionRow.layoutSizingHorizontal = "FILL";

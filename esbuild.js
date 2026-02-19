@@ -1,8 +1,17 @@
 const esbuild = require("esbuild");
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
 const watch = process.argv.includes("--watch");
+
+// Grab short git hash at build time
+let gitHash = "dev";
+try {
+  gitHash = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+} catch (e) {
+  // Not a git repo or git not available
+}
 
 // Step 1: Bundle code.ts → dist/code.js (Figma sandbox)
 async function buildCode() {
@@ -12,6 +21,7 @@ async function buildCode() {
     outfile: "dist/code.js",
     format: "iife",
     target: "es2017",
+    define: { __BUILD_HASH__: JSON.stringify(gitHash) },
     logLevel: "info",
   });
   if (watch) {
@@ -31,6 +41,7 @@ async function buildUI() {
     outfile: "dist/ui.js",
     format: "iife",
     target: "es2020",
+    define: { __BUILD_HASH__: JSON.stringify(gitHash) },
     logLevel: "info",
   });
   if (watch) {

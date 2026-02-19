@@ -1,4 +1,6 @@
 // UI logic — runs in iframe
+declare const __BUILD_HASH__: string;
+const HEADER_VERSION = `v1.0.0 (${typeof __BUILD_HASH__ !== "undefined" ? __BUILD_HASH__ : "dev"})`;
 
 const input = document.getElementById("input") as HTMLTextAreaElement;
 const generateBtn = document.getElementById("generateBtn") as HTMLButtonElement;
@@ -20,6 +22,8 @@ const helpOverlay = document.getElementById("helpOverlay") as HTMLElement;
 const helpClose = document.getElementById("helpClose") as HTMLButtonElement;
 const helpBody = document.getElementById("helpBody") as HTMLElement;
 const helpUseTemplate = document.getElementById("helpUseTemplate") as HTMLButtonElement;
+const headerVersion = document.getElementById("headerVersion") as HTMLElement;
+if (headerVersion) headerVersion.textContent = HEADER_VERSION;
 
 type SectionKey =
   | "header"
