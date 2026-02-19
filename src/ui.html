@@ -477,6 +477,17 @@
       font-weight: 600;
     }
     .platform-option input { display: none; }
+    .platform-option--coming-soon {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .platform-coming-soon {
+      font-size: 10px;
+      color: #999;
+      margin-top: 4px;
+      display: block;
+    }
     .device-label {
       font-weight: 600;
       font-size: 11px;
@@ -553,13 +564,13 @@
           <input type="checkbox" value="mac"> Mac
         </label>
       </div>
-      <div class="style-hint" id="styleHint">Component Style: iOS 26</div>
+      <div class="style-hint" id="styleHint">iOS 26 components</div>
     </div>
 
     <div class="sections-section">
       <div class="sections-header">
         <label>Sections to Generate</label>
-        <button class="toggle-all" id="toggleAll">Select All</button>
+        <button class="toggle-all" id="toggleAll">Deselect All</button>
       </div>
       <div class="checkboxes" id="checkboxes">
         <label class="checkbox-item" data-section="header">

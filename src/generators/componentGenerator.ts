@@ -38,6 +38,7 @@ import {
   createTrashIcon,
   createCircleIcon,
 } from "./icons";
+import { generateAndroidDeviceColumn } from "./androidComponentGenerator";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,13 +71,21 @@ function applyComponentSetStyle(set: ComponentSetNode, hasShadow: boolean): void
   set.clipsContent = false;
 }
 
+function hexToAlpha(hex: string): number {
+  const h = hex.replace("#", "");
+  if (h.length === 8) {
+    return parseInt(h.slice(6, 8), 16) / 255;
+  }
+  return 0.15;
+}
+
 function applyCardShadow(node: ComponentNode | FrameNode, ds: DesignSystem): void {
   var shadow = getFirstShadow(ds);
   if (shadow) {
     var sc = hexToRgb(shadow.color);
     node.effects = [{
       type: "DROP_SHADOW",
-      color: { r: sc.r, g: sc.g, b: sc.b, a: 0.15 },
+      color: { r: sc.r, g: sc.g, b: sc.b, a: hexToAlpha(shadow.color) },
       offset: { x: shadow.x, y: shadow.y },
       radius: shadow.blur,
       spread: shadow.spread,
@@ -1201,8 +1210,14 @@ var ANDROID_DEVICES = ["phone", "tablet", "watch", "tv", "desktop", "foldable"];
 
 async function generateDeviceColumn(
   ds: DesignSystem,
-  deviceLabel: string
+  deviceLabel: string,
+  deviceId?: string
 ): Promise<FrameNode> {
+  // Route Android devices to the MD3 generator
+  if (deviceId && ANDROID_DEVICES.indexOf(deviceId) !== -1) {
+    return generateAndroidDeviceColumn(ds, deviceLabel);
+  }
+
   var column = createSectionFrame(deviceLabel + " Component Library");
   column.clipsContent = false;
 
@@ -1210,49 +1225,49 @@ async function generateDeviceColumn(
   column.appendChild(subtitle);
 
   var buttonSet = await createButtonSet(ds);
-  appendFill(column, await createLabeledWrapper("Button", buttonSet));
+  column.appendChild(await createLabeledWrapper("Button", buttonSet));
 
   var textFieldSet = await createTextFieldSet(ds);
-  appendFill(column, await createLabeledWrapper("Text Field", textFieldSet));
+  column.appendChild(await createLabeledWrapper("Text Field", textFieldSet));
 
   var searchBarSet = await createSearchBarSet(ds);
-  appendFill(column, await createLabeledWrapper("Search Bar", searchBarSet));
+  column.appendChild(await createLabeledWrapper("Search Bar", searchBarSet));
 
   var segmentedSet = await createSegmentedControlSet(ds);
-  appendFill(column, await createLabeledWrapper("Segmented Control", segmentedSet));
+  column.appendChild(await createLabeledWrapper("Segmented Control", segmentedSet));
 
   var navBar = await createNavBarComponent(ds);
-  appendFill(column, await createLabeledWrapper("Navigation Bar", navBar));
+  column.appendChild(await createLabeledWrapper("Navigation Bar", navBar));
 
   var sectionHeader = await createSectionHeaderComponent(ds);
-  appendFill(column, await createLabeledWrapper("Section Header", sectionHeader));
+  column.appendChild(await createLabeledWrapper("Section Header", sectionHeader));
 
   var listCellSet = await createListCellSet(ds);
-  appendFill(column, await createLabeledWrapper("List Cell", listCellSet));
+  column.appendChild(await createLabeledWrapper("List Cell", listCellSet));
 
   var card = await createCardComponent(ds);
-  appendFill(column, await createLabeledWrapper("Card", card, true));
+  column.appendChild(await createLabeledWrapper("Card", card, true));
 
   var toggleSet = await createToggleSet(ds);
-  appendFill(column, await createLabeledWrapper("Toggle", toggleSet));
+  column.appendChild(await createLabeledWrapper("Toggle", toggleSet));
 
   var badgeSet = await createBadgeSet(ds);
-  appendFill(column, await createLabeledWrapper("Badge", badgeSet));
+  column.appendChild(await createLabeledWrapper("Badge", badgeSet));
 
   var tabBarItemSet = await createTabBarItemSet(ds);
-  appendFill(column, await createLabeledWrapper("Tab Bar Item", tabBarItemSet));
+  column.appendChild(await createLabeledWrapper("Tab Bar Item", tabBarItemSet));
 
   var toolbar = await createToolbarComponent(ds);
-  appendFill(column, await createLabeledWrapper("Toolbar", toolbar));
+  column.appendChild(await createLabeledWrapper("Toolbar", toolbar));
 
   var contextMenu = await createContextMenuComponent(ds);
-  appendFill(column, await createLabeledWrapper("Context Menu", contextMenu, true));
+  column.appendChild(await createLabeledWrapper("Context Menu", contextMenu, true));
 
   var actionSheet = await createActionSheetComponent(ds);
-  appendFill(column, await createLabeledWrapper("Action Sheet", actionSheet));
+  column.appendChild(await createLabeledWrapper("Action Sheet", actionSheet));
 
   var alert = await createAlertComponent(ds);
-  appendFill(column, await createLabeledWrapper("Alert", alert, true));
+  column.appendChild(await createLabeledWrapper("Alert", alert, true));
 
   return column;
 }
@@ -1280,7 +1295,7 @@ export async function generateComponents(
     sectionFrame.appendChild(title);
 
     var deviceLabel = DEVICE_LABELS[effectiveDevices[0]] || effectiveDevices[0];
-    var column = await generateDeviceColumn(ds, deviceLabel);
+    var column = await generateDeviceColumn(ds, deviceLabel, effectiveDevices[0]);
     // Unwrap: move children from the column directly into sectionFrame
     while (column.children.length > 0) {
       var child = column.children[0];
@@ -1307,7 +1322,7 @@ export async function generateComponents(
 
     for (var i = 0; i < deviceList.length; i++) {
       var label = DEVICE_LABELS[deviceList[i]] || deviceList[i];
-      var devColumn = await generateDeviceColumn(ds, label);
+      var devColumn = await generateDeviceColumn(ds, label, deviceList[i]);
       appendFill(sectionFrame, devColumn);
     }
 
@@ -1329,7 +1344,7 @@ export async function generateComponents(
 
     for (var ai = 0; ai < appleDevices.length; ai++) {
       var aLabel = DEVICE_LABELS[appleDevices[ai]] || appleDevices[ai];
-      var aColumn = await generateDeviceColumn(ds, aLabel);
+      var aColumn = await generateDeviceColumn(ds, aLabel, appleDevices[ai]);
       appendFill(appleSection, aColumn);
     }
 
@@ -1346,7 +1361,7 @@ export async function generateComponents(
 
     for (var di = 0; di < androidDevices.length; di++) {
       var dLabel = DEVICE_LABELS[androidDevices[di]] || androidDevices[di];
-      var dColumn = await generateDeviceColumn(ds, dLabel);
+      var dColumn = await generateDeviceColumn(ds, dLabel, androidDevices[di]);
       appendFill(androidSection, dColumn);
     }
 

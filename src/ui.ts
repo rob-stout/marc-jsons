@@ -76,30 +76,23 @@ const APPLE_DEVICES: DeviceConfig[] = [
 const ANDROID_DEVICES: DeviceConfig[] = [
   { value: "phone", label: "Phone" },
   { value: "tablet", label: "Tablet" },
-  { value: "wear", label: "Wear OS" },
-  { value: "chromebook", label: "Chromebook" },
+  { value: "watch", label: "Watch" },
+  { value: "desktop", label: "Desktop" },
 ];
 
 const STYLE_HINTS: Record<string, string> = {
-  "apple_iphone": "Component Style: iOS 26",
-  "apple_ipad": "Component Style: iPadOS 26",
-  "apple_watch": "Component Style: watchOS 11",
-  "apple_mac": "Component Style: macOS 26",
-  "android_phone": "Component Style: Material Design 3",
-  "android_tablet": "Component Style: Material Design 3",
-  "android_wear": "Component Style: Wear OS",
-  "android_chromebook": "Component Style: Material Design 3",
+  "apple_iphone": "iOS 26 components",
+  "apple_ipad": "iPadOS 26 components",
+  "apple_watch": "watchOS 11 components",
+  "apple_mac": "macOS 26 components",
+  "android": "Material Design 3 components",
+  "both": "iOS & Material Design 3 components",
 };
 
 function renderDeviceCheckboxes(platform: PlatformType): void {
-  var devices: DeviceConfig[] = [];
-  if (platform === "apple") {
-    devices = APPLE_DEVICES;
-  } else if (platform === "android") {
-    devices = ANDROID_DEVICES;
-  } else {
-    devices = APPLE_DEVICES.concat(ANDROID_DEVICES);
-  }
+  var devices: DeviceConfig[] = platform === "android"
+    ? ANDROID_DEVICES
+    : APPLE_DEVICES;
 
   var html = "";
   for (var i = 0; i < devices.length; i++) {
@@ -109,6 +102,24 @@ function renderDeviceCheckboxes(platform: PlatformType): void {
     html += '<input type="checkbox" value="' + d.value + '"' + checked + '> ' + d.label;
     html += '</label>';
   }
+
+  // "Both" platform shows Apple devices — Android Phone is added automatically
+  if (platform === "both") {
+    html = "";
+    for (var j = 0; j < APPLE_DEVICES.length; j++) {
+      var ad = APPLE_DEVICES[j];
+      var ac = j === 0 ? " checked" : "";
+      html += '<label class="checkbox-item" data-device="' + ad.value + '">';
+      html += '<input type="checkbox" value="' + ad.value + '"' + ac + '> ' + ad.label;
+      html += '</label>';
+    }
+    // Also add the first Android device so there's at least one from each side
+    var firstAndroid = ANDROID_DEVICES[0];
+    html += '<label class="checkbox-item" data-device="' + firstAndroid.value + '">';
+    html += '<input type="checkbox" value="' + firstAndroid.value + '" checked> ' + firstAndroid.label + ' (Android)';
+    html += '</label>';
+  }
+
   deviceCheckboxes.innerHTML = html;
   updateStyleHint();
 }
@@ -121,6 +132,16 @@ function getSelectedDevices(): string[] {
 }
 
 function updateStyleHint(): void {
+  if (selectedPlatform === "android") {
+    styleHint.textContent = STYLE_HINTS["android"];
+    return;
+  }
+
+  if (selectedPlatform === "both") {
+    styleHint.textContent = STYLE_HINTS["both"];
+    return;
+  }
+
   var devices = getSelectedDevices();
   if (devices.length === 0) {
     styleHint.textContent = "Select at least one device";
@@ -128,24 +149,12 @@ function updateStyleHint(): void {
   }
 
   if (devices.length === 1) {
-    var key = selectedPlatform + "_" + devices[0];
-    if (selectedPlatform === "both") {
-      // Determine which platform this device belongs to
-      var isApple = APPLE_DEVICES.some(function(d) { return d.value === devices[0]; });
-      key = (isApple ? "apple" : "android") + "_" + devices[0];
-    }
-    styleHint.textContent = STYLE_HINTS[key] || "Component Style: Platform-native";
+    var key = "apple_" + devices[0];
+    styleHint.textContent = STYLE_HINTS[key] || "Apple platform components";
     return;
   }
 
-  // Multiple devices
-  if (selectedPlatform === "both") {
-    styleHint.textContent = "Component Styles: iOS 26 + Material Design 3";
-  } else if (selectedPlatform === "apple") {
-    styleHint.textContent = "Component Style: Apple platforms";
-  } else {
-    styleHint.textContent = "Component Style: Material Design 3";
-  }
+  styleHint.textContent = "Apple platform components";
 }
 
 platformOptions.querySelectorAll<HTMLElement>(".platform-option").forEach(function(opt) {
