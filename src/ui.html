@@ -238,6 +238,7 @@
     }
     .status-bar.error { color: #D32F2F; }
     .status-bar.success { color: #2E7D32; }
+    .status-bar.warning { color: #B45309; }
 
     .spinner {
       width: 14px;
@@ -628,6 +629,7 @@
         </label>
       </div>
       <div class="var-hint" id="varHint">Variables won't be created or modified.</div>
+      <div id="varReplaceWarning" style="display:none; font-size:10px; color:#F59E0B; margin-top:5px; line-height:1.4;">&#9888; Removes all variables in this collection. This cannot be undone.</div>
     </div>
 
     <button class="generate-btn" id="generateBtn" disabled>Generate Style Guide</button>

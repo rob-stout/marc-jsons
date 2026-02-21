@@ -1,5 +1,31 @@
 import { COLORS, FONTS, PAGE_PADDING } from "../constants";
 
+// MARK: - Font fallback tracking
+
+export interface MissedFont {
+  family: string;
+  style: string;
+  // true = typeface is installed but this specific font (weight/style) isn't
+  // false = the typeface itself is not installed at all
+  typefaceAvailable: boolean;
+}
+
+// Keyed by "family|||style" — deduplicates across many text nodes using the same font
+const _missedFonts = new Map<string, MissedFont>();
+// Caches whether a given family has Regular available — avoids probing the same family twice
+const _probedFamilies = new Map<string, boolean>();
+
+/** Returns every font that fell back to Inter during this generation run. */
+export function getMissedFonts(): MissedFont[] {
+  return Array.from(_missedFonts.values());
+}
+
+/** Call this at the start of each generation run to reset tracking state. */
+export function clearMissedFonts(): void {
+  _missedFonts.clear();
+  _probedFamilies.clear();
+}
+
 export function hexToRgb(hex: string): RGB {
   let h = hex.replace("#", "");
   if (h.length === 3) {
@@ -54,13 +80,35 @@ export async function loadFontSafe(
     await figma.loadFontAsync(fontName);
     return fontName;
   } catch (_e) {
+    // Track this miss — deduplicated by family+style key
+    const key = family + "|||" + style;
+    if (!_missedFonts.has(key)) {
+      // Probe whether the typeface itself is available (only if we haven't checked this family yet)
+      let typefaceAvailable = false;
+      if (_probedFamilies.has(family)) {
+        typefaceAvailable = _probedFamilies.get(family) as boolean;
+      } else if (style === "Regular") {
+        // Regular itself failed — typeface is definitely not installed
+        _probedFamilies.set(family, false);
+      } else {
+        // Try Regular to see if the typeface exists but is missing this specific font
+        try {
+          await figma.loadFontAsync({ family, style: "Regular" });
+          typefaceAvailable = true;
+        } catch (_probe) {
+          typefaceAvailable = false;
+        }
+        _probedFamilies.set(family, typefaceAvailable);
+      }
+      _missedFonts.set(key, { family, style, typefaceAvailable });
+    }
     // Fallback: try Inter with the same style
     try {
       const fallback: FontName = { family: "Inter", style };
       await figma.loadFontAsync(fallback);
       return fallback;
     } catch (_e2) {
-      // Last resort: Inter Regular
+      // Last resort: Inter Regular — always available in Figma natively
       const lastResort: FontName = { family: "Inter", style: "Regular" };
       await figma.loadFontAsync(lastResort);
       return lastResort;

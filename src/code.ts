@@ -10,7 +10,7 @@ import { generateRadius } from "./generators/radiusGenerator";
 import { generateShadows } from "./generators/shadowGenerator";
 import { generateComponents } from "./generators/componentGenerator";
 import { syncVariables, VariableMode } from "./generators/variableGenerator";
-import { createAutoLayoutFrame, createDivider, appendFill, createLabel } from "./generators/shared";
+import { createAutoLayoutFrame, createDivider, appendFill, createLabel, getMissedFonts, clearMissedFonts } from "./generators/shared";
 import {
   PAGE_WIDTH,
   PAGE_PADDING,
@@ -87,8 +87,14 @@ figma.ui.onmessage = async (msg: {
       if (varResult.created > 0) parts.push(varResult.created + " created");
       if (varResult.updated > 0) parts.push(varResult.updated + " updated");
       if (varResult.skipped > 0) parts.push(varResult.skipped + " skipped");
-      varSummary = "Variables: " + (parts.length > 0 ? parts.join(", ") : "none");
-      if (varResult.errors.length > 0) {
+      if (parts.length > 0) {
+        varSummary = "Variables: " + parts.join(", ");
+      } else if (varResult.errors.length > 0) {
+        varSummary = "Variables: failed (" + varResult.errors.length + " errors)";
+      } else {
+        varSummary = "Variables: none";
+      }
+      if (varResult.errors.length > 0 && parts.length > 0) {
         varSummary += " (" + varResult.errors.length + " errors)";
         console.warn("Variable errors:", varResult.errors);
       }
@@ -111,6 +117,9 @@ figma.ui.onmessage = async (msg: {
     }
 
     const root = await createRootFrame(ds.meta.name, platform);
+
+    // Reset font-fallback tracking for this run
+    clearMissedFonts();
 
     const sections = msg.sections;
     const totalSections = sections.length;
@@ -202,7 +211,13 @@ figma.ui.onmessage = async (msg: {
         case "components":
           sendProgress("Generating component library...", advance());
           const components = await generateComponents(ds, platform, devices);
-          appendFill(root, components);
+          // "Both" layout: component frame is horizontal and self-sizing;
+          // forcing FILL would squish it to the root width instead.
+          if (platform === "both") {
+            root.appendChild(components);
+          } else {
+            appendFill(root, components);
+          }
           break;
       }
     }
@@ -211,6 +226,23 @@ figma.ui.onmessage = async (msg: {
     const lastChild = root.children[root.children.length - 1];
     if (lastChild && lastChild.name === "Divider") {
       lastChild.remove();
+    }
+
+    // Collect any typefaces/fonts that fell back to Inter and build warning strings
+    const missedFonts = getMissedFonts();
+    const warnings: string[] = missedFonts.map(function(f) {
+      if (f.typefaceAvailable) {
+        // Typeface is installed but this specific font (weight/style) isn't
+        return "\"" + f.family + " " + f.style + "\" isn't installed — you have " + f.family + " but not this font. Install the complete family, then regenerate.";
+      } else {
+        return "Typeface \"" + f.family + "\" isn't installed — install it via Font Book or Google Fonts, then regenerate.";
+      }
+    });
+    if (warnings.length > 0) {
+      const notifyText = warnings.length === 1
+        ? warnings[0].replace(", then regenerate.", ".")
+        : warnings.length + " typefaces/fonts not found — Inter used instead. See plugin panel.";
+      figma.notify(notifyText, { timeout: 8000 });
     }
 
     // Position at saved location or viewport center
@@ -227,8 +259,12 @@ figma.ui.onmessage = async (msg: {
     // Done message
     let doneMsg = `Style guide generated! ${ds.colors.length} colors, ${ds.typography.length} type styles, ${ds.spacing.length} spacing tokens`;
     if (varSummary) doneMsg += ". " + varSummary;
+    // Warn when component section was generated with no color tokens (fallback colors used)
+    if (sections.includes("components") && ds.colors.length === 0) {
+      doneMsg += ". Components used default colors — add color tokens for branded results";
+    }
 
-    sendDone(doneMsg);
+    sendDone(doneMsg, warnings);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     sendError(`Generation failed: ${message}`);
@@ -279,8 +315,8 @@ function sendProgress(message: string, percent: number): void {
   figma.ui.postMessage({ type: "progress", message, percent: Math.round(percent) });
 }
 
-function sendDone(message: string): void {
-  figma.ui.postMessage({ type: "done", message });
+function sendDone(message: string, warnings?: string[]): void {
+  figma.ui.postMessage({ type: "done", message, warnings: warnings || [] });
 }
 
 function sendError(message: string): void {

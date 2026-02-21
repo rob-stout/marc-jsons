@@ -60,7 +60,7 @@ const VAR_HINTS: Record<VariableMode, string> = {
   none: "Variables won't be created or modified.",
   add: "New variables will be created. Existing ones are left untouched.",
   smart: "Matching variables are updated, new ones added, unmatched left alone.",
-  replace: "All variables in the collection are deleted and recreated from scratch.",
+  replace: "Deletes the entire variable collection and recreates from scratch.",
 };
 
 // --- Platform & device selection ---
@@ -201,6 +201,12 @@ varOptions.querySelectorAll<HTMLElement>(".var-option").forEach((opt) => {
 
     // Update hint text
     varHint.textContent = VAR_HINTS[mode];
+
+    // Show destructive warning for Replace All
+    const replaceWarning = document.getElementById("varReplaceWarning") as HTMLElement;
+    if (replaceWarning) {
+      replaceWarning.style.display = mode === "replace" ? "block" : "none";
+    }
   });
 });
 
@@ -402,12 +408,20 @@ onmessage = (event) => {
       }
       break;
 
-    case "done":
+    case "done": {
       showProgress(false);
-      setStatus(msg.message || "Style guide generated!", "success");
+      const missingFonts: string[] = Array.isArray(msg.warnings) ? msg.warnings : [];
+      if (missingFonts.length === 1) {
+        setStatus("Style guide generated. " + missingFonts[0], "warning");
+      } else if (missingFonts.length > 1) {
+        setStatus("Style guide generated. " + missingFonts.join(" · "), "warning");
+      } else {
+        setStatus(msg.message || "Style guide generated!", "success");
+      }
       generateBtn.disabled = false;
       input.disabled = false;
       break;
+    }
 
     case "error":
       showProgress(false);
@@ -422,7 +436,7 @@ onmessage = (event) => {
 
 function setStatus(
   message: string,
-  type?: "working" | "error" | "success"
+  type?: "working" | "error" | "success" | "warning"
 ): void {
   statusText.textContent = message;
   statusBar.className = "status-bar";
@@ -430,6 +444,7 @@ function setStatus(
 
   if (type === "error") statusBar.classList.add("error");
   if (type === "success") statusBar.classList.add("success");
+  if (type === "warning") statusBar.classList.add("warning");
   if (type === "working") spinner.classList.add("active");
 }
 
