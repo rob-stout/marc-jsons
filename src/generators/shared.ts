@@ -26,6 +26,19 @@ export function clearMissedFonts(): void {
   _probedFamilies.clear();
 }
 
+/**
+ * Extract alpha channel from an 8-digit hex color string.
+ * Returns a 0–1 float. Falls back to 0.15 for 6-digit (no-alpha) hex.
+ */
+export function hexToAlpha(hex: string): number {
+  const h = hex.replace("#", "");
+  if (h.length === 8) {
+    return parseInt(h.slice(6, 8), 16) / 255;
+  }
+  // 6-digit hex has no alpha channel — treat as fully opaque
+  return 1.0;
+}
+
 export function hexToRgb(hex: string): RGB {
   let h = hex.replace("#", "");
   if (h.length === 3) {
