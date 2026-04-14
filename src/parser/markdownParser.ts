@@ -47,7 +47,7 @@ export function parseMarkdown(input: string): DesignSystem {
 
 // --- Meta extraction ---
 
-function extractMeta(lines: string[]): SystemMeta {
+export function extractMeta(lines: string[]): SystemMeta {
   const meta: SystemMeta = {
     name: "Design System",
     version: "",
@@ -109,13 +109,13 @@ function extractMeta(lines: string[]): SystemMeta {
 
 // --- Section splitting ---
 
-interface Section {
+export interface Section {
   heading: string;
   level: number;
   lines: string[];
 }
 
-function splitByHeadings(lines: string[]): Section[] {
+export function splitByHeadings(lines: string[]): Section[] {
   const sections: Section[] = [];
   let current: Section | null = null;
 
@@ -162,7 +162,7 @@ function extractTables(lines: string[]): ParsedTable[] {
 
 // --- Table classification ---
 
-function classifyAndAddTable(
+export function classifyAndAddTable(
   ds: DesignSystem,
   table: ParsedTable,
   isDarkSection: boolean

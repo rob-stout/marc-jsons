@@ -49,7 +49,7 @@ var TYPO_KEYWORDS: Record<TypographyRole, string[][]> = {
 
 // --- Color resolver ---
 
-function matchesKeywords(name: string, keywordSets: string[][]): boolean {
+export function matchesKeywords(name: string, keywordSets: string[][]): boolean {
   var lower = name.toLowerCase();
   for (var i = 0; i < keywordSets.length; i++) {
     var keywords = keywordSets[i];

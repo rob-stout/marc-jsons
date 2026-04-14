@@ -2,6 +2,7 @@ import { ShadowToken } from "../parser/types";
 import { COLORS, SHADOW_RECT_SIZE } from "../constants";
 import {
   hexToRgb,
+  hexToAlpha,
   createAutoLayoutFrame,
   createSectionTitle,
   createLabel,
@@ -30,13 +31,6 @@ export async function generateShadows(
   return section;
 }
 
-function hexToAlpha(hex: string): number {
-  const h = hex.replace("#", "");
-  if (h.length === 8) {
-    return parseInt(h.slice(6, 8), 16) / 255;
-  }
-  return 0.15;
-}
 
 async function createShadowItem(token: ShadowToken): Promise<FrameNode> {
   const col = createAutoLayoutFrame(token.name, "VERTICAL", 12);

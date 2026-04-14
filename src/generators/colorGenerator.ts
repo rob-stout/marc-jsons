@@ -120,7 +120,7 @@ async function createSwatchColumn(
   return col;
 }
 
-function formatTokenName(name: string): string {
+export function formatTokenName(name: string): string {
   // Shorten long dot-path names to last 2 segments
   const parts = name.split(".");
   if (parts.length > 2) {
@@ -129,7 +129,7 @@ function formatTokenName(name: string): string {
   return name;
 }
 
-function groupColors(colors: ColorToken[]): Map<string, ColorToken[]> {
+export function groupColors(colors: ColorToken[]): Map<string, ColorToken[]> {
   const groups = new Map<string, ColorToken[]>();
   for (const color of colors) {
     const parts = color.name.split(".");

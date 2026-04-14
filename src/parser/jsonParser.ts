@@ -10,7 +10,7 @@ import {
 
 const HEX_RE = /^#([0-9A-Fa-f]{3,8})$/;
 
-interface CollectedToken {
+export interface CollectedToken {
   type: string;
   value: unknown;
   description: string;
@@ -180,7 +180,7 @@ function collectTokens(
 /**
  * Infer token type from its key name and value when no explicit type is provided.
  */
-function inferType(key: string, value: string): string | null {
+export function inferType(key: string, value: string): string | null {
   // Hex color
   if (HEX_RE.test(value)) return "color";
   // rgb/rgba
@@ -206,7 +206,7 @@ function inferType(key: string, value: string): string | null {
   return null;
 }
 
-function resolveValue(
+export function resolveValue(
   value: unknown,
   tokens: Map<string, CollectedToken>
 ): unknown {
@@ -227,7 +227,7 @@ function resolveValue(
   return value;
 }
 
-function parseNumericValue(value: unknown): number | null {
+export function parseNumericValue(value: unknown): number | null {
   if (typeof value === "number") return value;
   if (typeof value === "string") {
     const num = parseFloat(value.replace(/[^0-9.-]/g, ""));

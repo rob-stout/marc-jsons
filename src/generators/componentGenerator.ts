@@ -1,6 +1,7 @@
 import { DesignSystem } from "../parser/types";
 import {
   hexToRgb,
+  hexToAlpha,
   createAutoLayoutFrame,
   createTextNode,
   createSectionTitle,
@@ -69,14 +70,6 @@ function applyComponentSetStyle(set: ComponentSetNode, hasShadow: boolean): void
   set.paddingTop = padding;
   set.paddingBottom = padding;
   set.clipsContent = false;
-}
-
-function hexToAlpha(hex: string): number {
-  const h = hex.replace("#", "");
-  if (h.length === 8) {
-    return parseInt(h.slice(6, 8), 16) / 255;
-  }
-  return 0.15;
 }
 
 function applyCardShadow(node: ComponentNode | FrameNode, ds: DesignSystem): void {

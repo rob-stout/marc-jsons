@@ -40,7 +40,7 @@ export function parseMarkdownTable(lines: string[]): ParsedTable | null {
   return { headers, rows };
 }
 
-function splitTableRow(line: string): string[] {
+export function splitTableRow(line: string): string[] {
   // Remove leading/trailing pipes and split
   let trimmed = line.trim();
   if (trimmed.startsWith("|")) trimmed = trimmed.slice(1);
@@ -48,6 +48,6 @@ function splitTableRow(line: string): string[] {
   return trimmed.split("|").map((c) => c.trim());
 }
 
-function stripBackticks(s: string): string {
+export function stripBackticks(s: string): string {
   return s.replace(/`/g, "");
 }
